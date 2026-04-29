@@ -1,5 +1,6 @@
 import { ThreadPage } from '#/components/pages/thread-page'
 import { createFileRoute, useParams } from '@tanstack/react-router'
+
 export const Route = createFileRoute('/_authenticated/threads/$id')({
   component: RouteComponent,
 })

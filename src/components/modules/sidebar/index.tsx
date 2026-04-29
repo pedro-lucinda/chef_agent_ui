@@ -37,7 +37,7 @@ export function SidebarComponent() {
           return (
             <SidebarMenuItem key={item.id}>
               <SidebarMenuButton
-              className={cn(item?.path ? 'cursor-pointer' :'hover:bg-transparent')}
+              className={cn(item.path ? 'cursor-pointer' : 'hover:bg-transparent')}
                 isActive={item.path === location.pathname}
                 onClick={() => {
                   if (item.path) {
