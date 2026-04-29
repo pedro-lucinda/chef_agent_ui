@@ -11,6 +11,7 @@ const rootElement = document.getElementById('app')!
 
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
+
   root.render(
     <Auth0Provider
       domain={import.meta.env.VITE_AUTH0_DOMAIN}
@@ -19,6 +20,7 @@ if (!rootElement.innerHTML) {
       cacheLocation="localstorage"
       authorizationParams={{
         redirect_uri: window.location.origin,
+        audience: import.meta.env.VITE_AUTH0_AUDIENCE
       }}
     >
       <App />
