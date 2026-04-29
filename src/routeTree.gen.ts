@@ -12,7 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
-import { Route as AuthenticatedAboutRouteImport } from './routes/_authenticated.about'
+import { Route as AuthenticatedThreadsIdRouteImport } from './routes/_authenticated.threads.$id'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -28,40 +28,40 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedAboutRoute = AuthenticatedAboutRouteImport.update({
-  id: '/about',
-  path: '/about',
+const AuthenticatedThreadsIdRoute = AuthenticatedThreadsIdRouteImport.update({
+  id: '/threads/$id',
+  path: '/threads/$id',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
-  '/about': typeof AuthenticatedAboutRoute
+  '/threads/$id': typeof AuthenticatedThreadsIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
-  '/about': typeof AuthenticatedAboutRoute
   '/': typeof AuthenticatedIndexRoute
+  '/threads/$id': typeof AuthenticatedThreadsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
-  '/_authenticated/about': typeof AuthenticatedAboutRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/threads/$id': typeof AuthenticatedThreadsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/about'
+  fullPaths: '/' | '/login' | '/threads/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/about' | '/'
+  to: '/login' | '/' | '/threads/$id'
   id:
     | '__root__'
     | '/_authenticated'
     | '/login'
-    | '/_authenticated/about'
     | '/_authenticated/'
+    | '/_authenticated/threads/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -92,24 +92,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/about': {
-      id: '/_authenticated/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AuthenticatedAboutRouteImport
+    '/_authenticated/threads/$id': {
+      id: '/_authenticated/threads/$id'
+      path: '/threads/$id'
+      fullPath: '/threads/$id'
+      preLoaderRoute: typeof AuthenticatedThreadsIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
   }
 }
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedAboutRoute: typeof AuthenticatedAboutRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedThreadsIdRoute: typeof AuthenticatedThreadsIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedAboutRoute: AuthenticatedAboutRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedThreadsIdRoute: AuthenticatedThreadsIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

@@ -1,13 +1,15 @@
 import { SidebarComponent } from "../modules/sidebar";
 import { Separator } from "../ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "../ui/sidebar";
+import { Skeleton } from "../ui/skeleton";
 
 interface Props {
   children: React.ReactNode
   title?: string
+  isTitleLoading?: boolean
 }
 
-export function SidebarLayout({ children, title }: Props) {
+export function SidebarLayout({ children, title, isTitleLoading }: Props) {
   return (
     <SidebarProvider>
       <SidebarComponent />
@@ -18,7 +20,7 @@ export function SidebarLayout({ children, title }: Props) {
             orientation="vertical"
             className="mr-2 data-[orientation=vertical]:h-4"
           />
-         {title && <p>Title</p>}
+         {title && isTitleLoading ? <Skeleton className="h-10 w-full" /> : <p>{title}</p>}
         </header>
         <div className="flex flex-col gap-2 p-4 w-full max-w-7xl mx-auto">
           {children}

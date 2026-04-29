@@ -1,5 +1,6 @@
 // @ts-check
 import { tanstackConfig } from '@tanstack/eslint-config'
+import eslintConfigPrettier from 'eslint-config-prettier/flat'
 import cypress from 'eslint-plugin-cypress'
 import globals from 'globals'
 
@@ -53,4 +54,7 @@ export default [
       'prettier.config.js',
     ],
   },
+
+  /** Must be last: disables ESLint rules that conflict with Prettier */
+  eslintConfigPrettier,
 ]

@@ -1,3 +1,4 @@
+import { TooltipProvider } from "../ui/tooltip"
 
 interface RootLayoutProps {
   children: React.ReactNode
@@ -6,7 +7,7 @@ interface RootLayoutProps {
 export function RootLayout({ children }: RootLayoutProps) {
   return (
     <main className="min-h-screen bg-background text-foreground">
-      {children}
+     <TooltipProvider> {children} </TooltipProvider>
     </main>
   )
 }
