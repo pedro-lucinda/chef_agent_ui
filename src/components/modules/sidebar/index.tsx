@@ -45,7 +45,7 @@ export function SidebarComponent() {
                   }
                 }}
               >
-                <span className="text-sm font-bold">{item.name}</span>
+                <span className="text-sm">{item.name}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           )

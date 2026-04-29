@@ -37,14 +37,18 @@ export function ThreadsList() {
     { isThreadsLoading ? <SidebarMenuSkeleton /> :
       threads?.map((thread) => {
       return (
-        <TooltipComponent key={thread.id} content={thread.messages[0].content}>
+        <TooltipComponent key={thread.id} content={thread.messages[0]?.content ?? ''}>
           <SidebarMenuButton
-          className="cursor-pointer" key={thread.id} 
+          className="cursor-pointer"
           onClick={() => handleSetActiveThead(thread)} 
           isActive={
             location.pathname === `/threads/${thread.id}`
           }>
-            <span className="text-sm font-bold">{thread.messages[0].content.substring(0, 20)}...</span>
+            <span className="text-sm font-bold">
+              {thread.messages[0]?.content
+                ? `${thread.messages[0].content.substring(0, 20)}...`
+                : 'Empty thread'}
+            </span>
           </SidebarMenuButton>
         </TooltipComponent>
       )

@@ -1,3 +1,7 @@
+import {
+  EventStreamContentType,
+  fetchEventSource,
+} from '@microsoft/fetch-event-source'
 import type {
   ChatSseEvent,
   Recipe,
@@ -23,6 +27,16 @@ function authHeaders(accessToken: string, extra?: HeadersInit): Headers {
   const h = new Headers(extra)
   h.set('Authorization', `Bearer ${accessToken}`)
   return h
+}
+
+/** `@microsoft/fetch-event-source` expects plain header objects */
+function authHeaderRecord(accessToken: string): Record<string, string> {
+  const h = authHeaders(accessToken)
+  const out: Record<string, string> = {}
+  h.forEach((value, key) => {
+    out[key] = value
+  })
+  return out
 }
 
 async function readBody(res: Response): Promise<unknown> {
@@ -134,6 +148,59 @@ export async function streamChat(
     )
   }
   return res
+}
+
+export interface StreamChatSseHandlers {
+  onEvent: (event: ChatSseEvent) => void
+  signal?: AbortSignal
+}
+
+/**
+ * POST `/chat/stream` and consume SSE via `@microsoft/fetch-event-source`.
+ * Rejects on HTTP errors or transport failures; resolves when the stream ends.
+ */
+export function streamChatSse(
+  accessToken: string,
+  params: StreamChatParams,
+  handlers: StreamChatSseHandlers,
+): Promise<void> {
+  const url = `${getBaseUrl()}/chat/stream`
+  const { onEvent, signal } = handlers
+
+  return fetchEventSource(url, {
+    method: 'POST',
+    headers: authHeaderRecord(accessToken),
+    body: buildStreamChatFormData(params),
+    signal,
+    async onopen(response) {
+      if (!response.ok) {
+        const body = await readBody(response)
+        throw new ApiRequestError(
+          formatErrorMessage(body, response.statusText),
+          response.status,
+          body,
+        )
+      }
+      const contentType = response.headers.get('content-type')
+      if (!contentType?.startsWith(EventStreamContentType)) {
+        throw new Error(
+          `Expected content-type ${EventStreamContentType}, got ${contentType ?? 'none'}`,
+        )
+      }
+    },
+    onmessage(ev) {
+      const line = ev.data.trim()
+      if (!line) return
+      try {
+        onEvent(JSON.parse(line) as ChatSseEvent)
+      } catch {
+        /* skip malformed JSON */
+      }
+    },
+    onerror(err) {
+      throw err
+    },
+  })
 }
 
 /** Parse `text/event-stream` chunks (`data: {...}\\n\\n`) from a chat stream response */

@@ -8,7 +8,7 @@ interface Props {
 export function TooltipComponent({ content, children }: Props) {
   return (
     <Tooltip>
-      <TooltipTrigger>
+      <TooltipTrigger asChild>
         {children}
       </TooltipTrigger>
       <TooltipContent>
