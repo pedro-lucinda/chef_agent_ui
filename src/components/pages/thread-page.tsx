@@ -5,6 +5,11 @@ import {
   ConversationScrollButton,
 } from '#/components/ai-elements/conversation'
 import type { PromptInputMessage } from '#/components/ai-elements/prompt-input'
+import {
+  fileUIPartsToFiles,
+  fileUIPartsToMessageAttachments,
+  imageFileUIParts,
+} from '#/lib/file-ui-part'
 import { createRecipe, getThread, listRecipes, streamChatSse } from '#/services/api'
 import type { MessageOut, RecipeCreate, RecipeFromStream } from '#/services/api/types'
 import { useTheadsStore } from '#/store/theads'
@@ -30,8 +35,8 @@ export function ThreadPage({ id }: Props) {
   const { getAccessTokenSilently } = useAuth0()
   const queryClient = useQueryClient()
   const streamAbortRef = useRef<AbortController | null>(null)
+  const invalidateThreadsAfterStreamRef = useRef(false)
   const incomingMessage = useTheadsStore((state) => state.incomingMessage)
-  const setIncomingMessage = useTheadsStore((state) => state.setIncomingMessage)
 
   const { data: thread, isLoading: isThreadLoading } = useQuery({
     queryKey: ['thread', id],
@@ -59,6 +64,8 @@ export function ThreadPage({ id }: Props) {
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamError, setStreamError] = useState<string | null>(null)
   const [streamUserText, setStreamUserText] = useState('')
+  const [streamUserAttachments, setStreamUserAttachments] =
+    useState<MessageOut['attachments']>(undefined)
   const [streamAssistantText, setStreamAssistantText] = useState('')
   const [streamRecipes, setStreamRecipes] = useState<RecipeFromStream[]>([])
   const [streamStatus, setStreamStatus] = useState<string | null>(null)
@@ -68,7 +75,7 @@ export function ThreadPage({ id }: Props) {
     if (!isStreaming) return server
 
     let next = [...server]
-    if (streamUserText) {
+    if (streamUserText || (streamUserAttachments?.length ?? 0) > 0) {
       next = [
         ...next,
         {
@@ -78,6 +85,10 @@ export function ThreadPage({ id }: Props) {
           thread_id: thread?.id ?? id,
           created_at: '',
           updated_at: '',
+          attachments:
+            streamUserAttachments && streamUserAttachments.length > 0
+              ? streamUserAttachments
+              : undefined,
         },
       ]
     }
@@ -99,23 +110,36 @@ export function ThreadPage({ id }: Props) {
     id,
     isStreaming,
     streamUserText,
+    streamUserAttachments,
     streamAssistantText,
     streamRecipes,
   ])
 
   const threadTitle = useMemo(() => {
-    const first = thread?.messages[0]?.content
-    if (!first) return 'Thread'
-    return first.length > 80 ? `${first.slice(0, 80)}…` : first
+    const first = thread?.messages[0]
+    const label =
+      first?.content?.trim() || first?.attachments?.[0]?.filename || first?.attachments?.[0]?.url
+    if (!label) return 'Thread'
+    return label.length > 80 ? `${label.slice(0, 80)}…` : label
   }, [thread?.messages])
 
   const handleSubmit = useCallback(
     async (message: PromptInputMessage) => {
       const text = message.text.trim()
-      if (!text || isStreaming) return
+      const files = message.files ?? []
+      if ((!text && files.length === 0) || isStreaming) return
+
+      const pendingHandoff = useTheadsStore.getState().incomingMessage
+      if (pendingHandoff?.threadId === id) {
+        invalidateThreadsAfterStreamRef.current = true
+        useTheadsStore.getState().setIncomingMessage(null)
+      } else {
+        invalidateThreadsAfterStreamRef.current = false
+      }
 
       setInput('')
       setStreamUserText(text)
+      setStreamUserAttachments(fileUIPartsToMessageAttachments(files))
       setStreamAssistantText('')
       setStreamRecipes([])
       setStreamStatus(null)
@@ -126,9 +150,14 @@ export function ThreadPage({ id }: Props) {
         const abortController = new AbortController()
         streamAbortRef.current = abortController
         const accessToken = await getAccessTokenSilently()
+        const imageFiles = await fileUIPartsToFiles(imageFileUIParts(files))
         await streamChatSse(
           accessToken,
-          { thread_id: id, message: text },
+          {
+            thread_id: id,
+            message: text,
+            ...(imageFiles.length > 0 ? { images: imageFiles } : {}),
+          },
           {
             signal: abortController.signal,
             onEvent: (event) => {
@@ -174,12 +203,13 @@ export function ThreadPage({ id }: Props) {
         streamAbortRef.current = null
         setIsStreaming(false)
         setStreamUserText('')
+        setStreamUserAttachments(undefined)
         setStreamAssistantText('')
         setStreamRecipes([])
         setStreamStatus(null)
-        if (incomingMessage && incomingMessage.threadId === id) {
+        if (invalidateThreadsAfterStreamRef.current) {
           queryClient.invalidateQueries({ queryKey: ['threads'] })
-          setIncomingMessage(null)
+          invalidateThreadsAfterStreamRef.current = false
         }
       }
     },
@@ -213,10 +243,12 @@ export function ThreadPage({ id }: Props) {
   )
 
   useEffect(() => {
-    if (incomingMessage) {
-      handleSubmit({ text: incomingMessage.message, files: incomingMessage.files ?? [] })
-    }
-  }, [incomingMessage])
+    if (!incomingMessage || incomingMessage.threadId !== id) return
+    void handleSubmit({
+      text: incomingMessage.message,
+      files: incomingMessage.files ?? [],
+    })
+  }, [incomingMessage, id, handleSubmit])
 
   return (
     <SidebarLayout title={threadTitle} isTitleLoading={isThreadLoading}>
@@ -235,7 +267,40 @@ export function ThreadPage({ id }: Props) {
               ) : (
                 displayMessages.map((message) => (
                   <Message from={message.role} key={message.id}>
-                    {message.content && <MessageContent>{message.content}</MessageContent>}
+                    {(message.content ||
+                      (message.attachments && message.attachments.length > 0)) && (
+                      <MessageContent>
+                        {message.content ? (
+                          <span className="whitespace-pre-wrap">{message.content}</span>
+                        ) : null}
+                        {message.role === 'user' &&
+                          message.attachments &&
+                          message.attachments.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-2">
+                              {message.attachments.map((att, idx) =>
+                                att.mediaType?.startsWith('image/') ? (
+                                  <img
+                                    key={`${message.id}-att-${idx}`}
+                                    src={att.url}
+                                    alt={att.filename ?? 'Attachment'}
+                                    className="max-h-48 max-w-full rounded-md border border-border/60 object-contain"
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <a
+                                    key={`${message.id}-att-${idx}`}
+                                    href={att.url}
+                                    download={att.filename}
+                                    className="text-xs text-primary underline-offset-2 hover:underline"
+                                  >
+                                    {att.filename ?? 'File'}
+                                  </a>
+                                ),
+                              )}
+                            </div>
+                          )}
+                      </MessageContent>
+                    )}
                     {message.recipes && message.recipes.length > 0 && (
                       <div className="flex flex-col gap-3 w-full">
                         {message.recipes.map((recipe) => (
