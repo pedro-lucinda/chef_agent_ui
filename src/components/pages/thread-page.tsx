@@ -7,10 +7,11 @@ import {
 import type { PromptInputMessage } from '#/components/ai-elements/prompt-input'
 import { createRecipe, getThread, listRecipes, streamChatSse } from '#/services/api'
 import type { MessageOut, RecipeCreate, RecipeFromStream } from '#/services/api/types'
+import { useTheadsStore } from '#/store/theads'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { MessageSquare } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Message, MessageContent } from '../ai-elements/message'
 import { SidebarLayout } from '../layouts/sidebar-layout'
 import { RecipeComponent } from '../modules/recipes/recipe'
@@ -29,6 +30,8 @@ export function ThreadPage({ id }: Props) {
   const { getAccessTokenSilently } = useAuth0()
   const queryClient = useQueryClient()
   const streamAbortRef = useRef<AbortController | null>(null)
+  const incomingMessage = useTheadsStore((state) => state.incomingMessage)
+  const setIncomingMessage = useTheadsStore((state) => state.setIncomingMessage)
 
   const { data: thread, isLoading: isThreadLoading } = useQuery({
     queryKey: ['thread', id],
@@ -90,7 +93,15 @@ export function ThreadPage({ id }: Props) {
       recipes: streamRecipes.length > 0 ? streamRecipes : undefined,
     })
     return next
-  }, [thread?.messages, thread?.id, id, isStreaming, streamUserText, streamAssistantText, streamRecipes])
+  }, [
+    thread?.messages,
+    thread?.id,
+    id,
+    isStreaming,
+    streamUserText,
+    streamAssistantText,
+    streamRecipes,
+  ])
 
   const threadTitle = useMemo(() => {
     const first = thread?.messages[0]?.content
@@ -121,7 +132,11 @@ export function ThreadPage({ id }: Props) {
           {
             signal: abortController.signal,
             onEvent: (event) => {
-              if (event.type === 'status' && 'status' in event && typeof event.status === 'string') {
+              if (
+                event.type === 'status' &&
+                'status' in event &&
+                typeof event.status === 'string'
+              ) {
                 setStreamStatus(event.status)
                 return
               }
@@ -162,6 +177,10 @@ export function ThreadPage({ id }: Props) {
         setStreamAssistantText('')
         setStreamRecipes([])
         setStreamStatus(null)
+        if (incomingMessage && incomingMessage.threadId === id) {
+          queryClient.invalidateQueries({ queryKey: ['threads'] })
+          setIncomingMessage(null)
+        }
       }
     },
     [getAccessTokenSilently, id, isStreaming, queryClient],
@@ -193,6 +212,12 @@ export function ThreadPage({ id }: Props) {
     [getAccessTokenSilently, queryClient],
   )
 
+  useEffect(() => {
+    if (incomingMessage) {
+      handleSubmit({ text: incomingMessage.message, files: incomingMessage.files ?? [] })
+    }
+  }, [incomingMessage])
+
   return (
     <SidebarLayout title={threadTitle} isTitleLoading={isThreadLoading}>
       {isThreadLoading ? (
@@ -210,9 +235,7 @@ export function ThreadPage({ id }: Props) {
               ) : (
                 displayMessages.map((message) => (
                   <Message from={message.role} key={message.id}>
-                    {message.content && (
-                      <MessageContent>{message.content}</MessageContent>
-                    )}
+                    {message.content && <MessageContent>{message.content}</MessageContent>}
                     {message.recipes && message.recipes.length > 0 && (
                       <div className="flex flex-col gap-3 w-full">
                         {message.recipes.map((recipe) => (
