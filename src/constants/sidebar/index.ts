@@ -9,6 +9,6 @@ export const SIDEBAR_ITEMS: ISidebarItem[] = [
   {
     id: 1,
     name: 'My Recipes',
-    path: '/my-recipes',
+    path: '/recipes',
   }
 ]

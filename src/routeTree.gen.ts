@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
+import { Route as AuthenticatedRecipesRouteImport } from './routes/_authenticated.recipes'
 import { Route as AuthenticatedThreadsIdRouteImport } from './routes/_authenticated.threads.$id'
+import { Route as AuthenticatedRecipeIdRouteImport } from './routes/_authenticated.recipe.$id'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -28,39 +30,57 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedRecipesRoute = AuthenticatedRecipesRouteImport.update({
+  id: '/recipes',
+  path: '/recipes',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedThreadsIdRoute = AuthenticatedThreadsIdRouteImport.update({
   id: '/threads/$id',
   path: '/threads/$id',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedRecipeIdRoute = AuthenticatedRecipeIdRouteImport.update({
+  id: '/recipe/$id',
+  path: '/recipe/$id',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
+  '/recipes': typeof AuthenticatedRecipesRoute
+  '/recipe/$id': typeof AuthenticatedRecipeIdRoute
   '/threads/$id': typeof AuthenticatedThreadsIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/recipes': typeof AuthenticatedRecipesRoute
   '/': typeof AuthenticatedIndexRoute
+  '/recipe/$id': typeof AuthenticatedRecipeIdRoute
   '/threads/$id': typeof AuthenticatedThreadsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authenticated/recipes': typeof AuthenticatedRecipesRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/recipe/$id': typeof AuthenticatedRecipeIdRoute
   '/_authenticated/threads/$id': typeof AuthenticatedThreadsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/threads/$id'
+  fullPaths: '/' | '/login' | '/recipes' | '/recipe/$id' | '/threads/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/' | '/threads/$id'
+  to: '/login' | '/recipes' | '/' | '/recipe/$id' | '/threads/$id'
   id:
     | '__root__'
     | '/_authenticated'
     | '/login'
+    | '/_authenticated/recipes'
     | '/_authenticated/'
+    | '/_authenticated/recipe/$id'
     | '/_authenticated/threads/$id'
   fileRoutesById: FileRoutesById
 }
@@ -92,6 +112,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/recipes': {
+      id: '/_authenticated/recipes'
+      path: '/recipes'
+      fullPath: '/recipes'
+      preLoaderRoute: typeof AuthenticatedRecipesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/threads/$id': {
       id: '/_authenticated/threads/$id'
       path: '/threads/$id'
@@ -99,16 +126,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedThreadsIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/recipe/$id': {
+      id: '/_authenticated/recipe/$id'
+      path: '/recipe/$id'
+      fullPath: '/recipe/$id'
+      preLoaderRoute: typeof AuthenticatedRecipeIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedRecipesRoute: typeof AuthenticatedRecipesRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedRecipeIdRoute: typeof AuthenticatedRecipeIdRoute
   AuthenticatedThreadsIdRoute: typeof AuthenticatedThreadsIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedRecipesRoute: AuthenticatedRecipesRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedRecipeIdRoute: AuthenticatedRecipeIdRoute,
   AuthenticatedThreadsIdRoute: AuthenticatedThreadsIdRoute,
 }
 
