@@ -1,4 +1,4 @@
-import { SIDEBAR_ITEMS } from '#/components/constants/sidebar'
+import { SIDEBAR_ITEMS } from '#/constants/sidebar'
 import { Logo } from '#/components/elements/logo'
 import { ThemeToggle } from '#/components/elements/theme-toggle'
 import { Button } from '#/components/ui/button'
