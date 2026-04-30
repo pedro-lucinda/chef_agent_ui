@@ -2,10 +2,12 @@ import { createThread } from '#/services/api'
 import { useTheadsStore } from '#/store/theads'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useNavigate } from '@tanstack/react-router'
+import { ChefHat } from 'lucide-react'
 import { useState } from 'react'
 import type { PromptInputMessage } from '../ai-elements/prompt-input'
 import { SidebarLayout } from '../layouts/sidebar-layout'
 import { PromptInputComponent } from '../modules/thread/prompt-input'
+import { TextGenerateEffect } from '../ui/text-generate-effect'
 
 export function HomePage() {
   const navigate = useNavigate()
@@ -32,11 +34,18 @@ export function HomePage() {
   return (
     <SidebarLayout>
       <div className="flex flex-col w-full max-w-4xl mx-auto h-full justify-center gap-5">
-        <div className="flex flex-col mx-auto mt-10 text-center gap-1">
-          <h1 className="text-5xl font-bold">Welcome to the Chef App</h1>
-          <p className="text-lg text-gray-500">
-            You can start by asking for a recipe or a meal plan
-          </p>
+        <div className="flex flex-col mx-auto  text-center gap-1">
+          <ChefHat className="w-10 h-10 mx-auto" />
+          <TextGenerateEffect
+            words="Welcome to the Chef App"
+            className="text-5xl max-md:text-4xl max-sm:text-2xl"
+            repeatIntervalMs={15_000}
+          />
+          <TextGenerateEffect
+            words="You can start by asking for a recipe or a meal plan"
+            className="text-lg text-muted-foreground font-light "
+            repeatIntervalMs={12_000}
+          />
         </div>
 
         <PromptInputComponent
