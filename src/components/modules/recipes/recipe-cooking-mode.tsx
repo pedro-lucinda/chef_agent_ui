@@ -1,4 +1,4 @@
-import { cn } from '#/lib/utils'
+import { cn } from '#/utils/cn'
 import type { Recipe } from '#/services/api'
 import { ChefHat, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'

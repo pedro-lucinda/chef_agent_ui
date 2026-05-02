@@ -3,8 +3,8 @@ import {
   fileUIPartsToFiles,
   fileUIPartsToMessageAttachments,
   imageFileUIParts,
-} from '#/lib/file-ui-part'
-import { buildThreadDisplayMessages } from '#/lib/thread-display-messages'
+} from '#/utils/file-ui-part'
+import { buildThreadDisplayMessages } from '#/utils/thread-display-messages'
 import { streamChatSse } from '#/services/api'
 import type { ChatSseEvent, MessageOut, RecipeFromStream, ThreadOut } from '#/services/api/types'
 import { useTheadsStore } from '#/store/theads'

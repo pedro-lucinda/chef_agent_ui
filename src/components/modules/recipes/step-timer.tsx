@@ -1,8 +1,7 @@
 import { Button } from '#/components/ui/button'
-import type { StepTimerAlarmHandle } from '#/lib/step-timer-alarm'
-import { startStepTimerAlarmLoop } from '#/lib/step-timer-alarm'
+import { useStepTimer } from '#/hooks/use-step-timer'
+import { formatStepTimerMmSs } from '#/utils/step-timer-format'
 import { Clock, Play, Square, VolumeX } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface Props {
   /** Step length in minutes (fractional allowed). */
@@ -14,70 +13,16 @@ interface Props {
   size?: 'default' | 'lg'
 }
 
-function formatMmSs(totalSeconds: number): string {
-  const m = Math.floor(totalSeconds / 60)
-  const s = totalSeconds % 60
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-}
-
 export function StepTimer({ durationMinutes, stepKey, className, size = 'default' }: Props) {
-  const totalSeconds = Math.max(0, Math.round(Number(durationMinutes) * 60))
-  const [remaining, setRemaining] = useState(totalSeconds)
-  const [running, setRunning] = useState(false)
-  const [alarmRinging, setAlarmRinging] = useState(false)
-  const alarmRef = useRef<StepTimerAlarmHandle | null>(null)
-
-  const stopAlarm = useCallback(() => {
-    alarmRef.current?.stop()
-    alarmRef.current = null
-    setAlarmRinging(false)
-  }, [])
-
-  useEffect(() => {
-    stopAlarm()
-    setRemaining(totalSeconds)
-    setRunning(false)
-  }, [stepKey, totalSeconds, stopAlarm])
-
-  useEffect(() => {
-    return () => {
-      alarmRef.current?.stop()
-      alarmRef.current = null
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!running) return
-    const id = window.setInterval(() => {
-      setRemaining((r) => {
-        if (r <= 0) return 0
-        const next = r - 1
-        if (next === 0) {
-          const handle = startStepTimerAlarmLoop()
-          if (handle) {
-            alarmRef.current?.stop()
-            alarmRef.current = handle
-          }
-          setAlarmRinging(true)
-          setRunning(false)
-        }
-        return next
-      })
-    }, 1000)
-    return () => window.clearInterval(id)
-  }, [running])
-
-  const handlePlay = useCallback(() => {
-    if (totalSeconds === 0) return
-    stopAlarm()
-    setRemaining((r) => (r <= 0 ? totalSeconds : r))
-    setRunning(true)
-  }, [totalSeconds, stopAlarm])
-
-  const handleStopTimer = useCallback(() => {
-    setRunning(false)
-    setRemaining(totalSeconds)
-  }, [totalSeconds])
+  const {
+    totalSeconds,
+    remaining,
+    running,
+    alarmRinging,
+    stopAlarm,
+    handlePlay,
+    handleStopTimer,
+  } = useStepTimer(durationMinutes, stepKey)
 
   if (totalSeconds === 0) return null
 
@@ -94,7 +39,7 @@ export function StepTimer({ durationMinutes, stepKey, className, size = 'default
       aria-label={
         alarmRinging
           ? 'Timer finished, alarm playing'
-          : `Step timer ${formatMmSs(remaining)} remaining`
+          : `Step timer ${formatStepTimerMmSs(remaining)} remaining`
       }
     >
       <div className="flex items-center gap-2 sm:gap-3">
@@ -105,7 +50,7 @@ export function StepTimer({ durationMinutes, stepKey, className, size = 'default
         <span
           className={`min-w-[5ch] ${alarmRinging ? 'text-destructive' : 'text-foreground'} ${timeClass}`}
         >
-          {formatMmSs(remaining)}
+          {formatStepTimerMmSs(remaining)}
         </span>
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
