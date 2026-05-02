@@ -13,7 +13,7 @@ export function SidebarLayout({ children, title, isTitleLoading }: Props) {
   return (
     <SidebarProvider>
       <SidebarComponent />
-      <SidebarInset>
+      <SidebarInset className="h-screen overflow-hidden">
          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator
@@ -22,7 +22,7 @@ export function SidebarLayout({ children, title, isTitleLoading }: Props) {
           />
          {title && isTitleLoading ? <Skeleton className="h-10 w-full" /> : <p>{title}</p>}
         </header>
-        <div className="flex flex-col gap-2 p-4 w-full max-w-7xl mx-auto">
+        <div className="flex flex-1 min-h-0 flex-col gap-2 p-4 w-full max-w-7xl mx-auto overflow-hidden">
           {children}
         </div>
       </SidebarInset>

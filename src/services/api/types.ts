@@ -1,3 +1,10 @@
+/** Optional client-side or API-provided attachment metadata on a message */
+export interface MessageAttachment {
+  url: string
+  mediaType?: string
+  filename?: string
+}
+
 /** Message row returned on threads / history */
 export interface MessageOut {
   id: string
@@ -8,6 +15,8 @@ export interface MessageOut {
   updated_at: string
   /** Present on assistant messages when a recipe was attached */
   recipes?: RecipeFromStream[] | null
+  /** User images / files (optimistic UI or when API returns them) */
+  attachments?: MessageAttachment[] | null
 }
 
 export interface ThreadOut {
@@ -133,6 +142,9 @@ export type ChatSseEvent =
 export interface StreamChatParams {
   thread_id: string
   message: string
+  /** @deprecated Prefer {@link StreamChatParams.images} */
   image?: File
+  /** Each file is appended as multipart field `image` (repeated keys). */
+  images?: File[]
   user_language?: string
 }

@@ -1,3 +1,4 @@
+import { EventStreamContentType, fetchEventSource } from '@microsoft/fetch-event-source'
 import type {
   ChatSseEvent,
   Recipe,
@@ -23,6 +24,16 @@ function authHeaders(accessToken: string, extra?: HeadersInit): Headers {
   const h = new Headers(extra)
   h.set('Authorization', `Bearer ${accessToken}`)
   return h
+}
+
+/** `@microsoft/fetch-event-source` expects plain header objects */
+function authHeaderRecord(accessToken: string): Record<string, string> {
+  const h = authHeaders(accessToken)
+  const out: Record<string, string> = {}
+  h.forEach((value, key) => {
+    out[key] = value
+  })
+  return out
 }
 
 async function readBody(res: Response): Promise<unknown> {
@@ -71,11 +82,7 @@ async function requestJson<T>(
   const res = await fetch(url, { ...init, headers })
   const body = res.ok ? null : await readBody(res)
   if (!res.ok) {
-    throw new ApiRequestError(
-      formatErrorMessage(body, res.statusText),
-      res.status,
-      body,
-    )
+    throw new ApiRequestError(formatErrorMessage(body, res.statusText), res.status, body)
   }
   if (res.status === 204) return undefined as T
   const parsed = await readBody(res)
@@ -87,7 +94,11 @@ export function buildStreamChatFormData(params: StreamChatParams): FormData {
   const fd = new FormData()
   fd.append('thread_id', params.thread_id)
   fd.append('message', params.message)
-  if (params.image) fd.append('image', params.image)
+  const imageList =
+    params.images && params.images.length > 0 ? params.images : params.image ? [params.image] : []
+  for (const file of imageList) {
+    fd.append('image', file)
+  }
   if (params.user_language) fd.append('user_language', params.user_language)
   return fd
 }
@@ -120,20 +131,65 @@ export async function streamChat(
   params: StreamChatParams,
   init?: RequestInit,
 ): Promise<Response> {
-  const res = await postChatStream(
-    accessToken,
-    buildStreamChatFormData(params),
-    init,
-  )
+  const res = await postChatStream(accessToken, buildStreamChatFormData(params), init)
   if (!res.ok) {
     const body = await readBody(res)
-    throw new ApiRequestError(
-      formatErrorMessage(body, res.statusText),
-      res.status,
-      body,
-    )
+    throw new ApiRequestError(formatErrorMessage(body, res.statusText), res.status, body)
   }
   return res
+}
+
+export interface StreamChatSseHandlers {
+  onEvent: (event: ChatSseEvent) => void
+  signal?: AbortSignal
+}
+
+/**
+ * POST `/chat/stream` and consume SSE via `@microsoft/fetch-event-source`.
+ * Rejects on HTTP errors or transport failures; resolves when the stream ends.
+ */
+export function streamChatSse(
+  accessToken: string,
+  params: StreamChatParams,
+  handlers: StreamChatSseHandlers,
+): Promise<void> {
+  const url = `${getBaseUrl()}/chat/stream`
+  const { onEvent, signal } = handlers
+
+  return fetchEventSource(url, {
+    method: 'POST',
+    headers: authHeaderRecord(accessToken),
+    body: buildStreamChatFormData(params),
+    signal,
+    async onopen(response) {
+      if (!response.ok) {
+        const body = await readBody(response)
+        throw new ApiRequestError(
+          formatErrorMessage(body, response.statusText),
+          response.status,
+          body,
+        )
+      }
+      const contentType = response.headers.get('content-type')
+      if (!contentType?.startsWith(EventStreamContentType)) {
+        throw new Error(
+          `Expected content-type ${EventStreamContentType}, got ${contentType ?? 'none'}`,
+        )
+      }
+    },
+    onmessage(ev) {
+      const line = ev.data.trim()
+      if (!line) return
+      try {
+        onEvent(JSON.parse(line) as ChatSseEvent)
+      } catch {
+        /* skip malformed JSON */
+      }
+    },
+    onerror(err) {
+      throw err
+    },
+  })
 }
 
 /** Parse `text/event-stream` chunks (`data: {...}\\n\\n`) from a chat stream response */
@@ -184,20 +240,14 @@ export function listThreads(accessToken: string): Promise<ThreadOut[]> {
 }
 
 /** `GET /thread/{thread_id}` */
-export function getThread(
-  accessToken: string,
-  threadId: string,
-): Promise<ThreadOut> {
+export function getThread(accessToken: string, threadId: string): Promise<ThreadOut> {
   return requestJson<ThreadOut>(accessToken, `/thread/${encodeURIComponent(threadId)}`, {
     method: 'GET',
   })
 }
 
 /** `DELETE /thread/{thread_id}` */
-export function deleteThread(
-  accessToken: string,
-  threadId: string,
-): Promise<void> {
+export function deleteThread(accessToken: string, threadId: string): Promise<void> {
   return requestJson<void>(accessToken, `/thread/${encodeURIComponent(threadId)}`, {
     method: 'DELETE',
   })
@@ -209,10 +259,7 @@ export function getCurrentUser(accessToken: string): Promise<UserOut> {
 }
 
 /** `PATCH /user/me` */
-export function updateCurrentUser(
-  accessToken: string,
-  body: UserUpdate,
-): Promise<UserOut> {
+export function updateCurrentUser(accessToken: string, body: UserUpdate): Promise<UserOut> {
   return requestJson<UserOut>(accessToken, '/user/me', {
     method: 'PATCH',
     body: JSON.stringify(body),
@@ -220,10 +267,7 @@ export function updateCurrentUser(
 }
 
 /** `POST /recipes/` */
-export function createRecipe(
-  accessToken: string,
-  body: RecipeCreate,
-): Promise<Recipe> {
+export function createRecipe(accessToken: string, body: RecipeCreate): Promise<Recipe> {
   return requestJson<Recipe>(accessToken, '/recipes/', {
     method: 'POST',
     body: JSON.stringify(body),
@@ -236,10 +280,7 @@ export function listRecipes(accessToken: string): Promise<Recipe[]> {
 }
 
 /** `GET /recipes/{recipe_id}` */
-export function getRecipe(
-  accessToken: string,
-  recipeId: string,
-): Promise<Recipe> {
+export function getRecipe(accessToken: string, recipeId: string): Promise<Recipe> {
   return requestJson<Recipe>(accessToken, `/recipes/${encodeURIComponent(recipeId)}`, {
     method: 'GET',
   })
@@ -258,10 +299,7 @@ export function updateRecipe(
 }
 
 /** `DELETE /recipes/{recipe_id}` */
-export function deleteRecipe(
-  accessToken: string,
-  recipeId: string,
-): Promise<void> {
+export function deleteRecipe(accessToken: string, recipeId: string): Promise<void> {
   return requestJson<void>(accessToken, `/recipes/${encodeURIComponent(recipeId)}`, {
     method: 'DELETE',
   })
