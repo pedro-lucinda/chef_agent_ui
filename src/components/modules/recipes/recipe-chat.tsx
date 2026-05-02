@@ -1,14 +1,14 @@
-import type { RecipeFromStream } from "#/services/api/types";
-import { BookmarkCheck, BookmarkPlus, Loader2 } from "lucide-react";
-import { useState } from "react";
-import { Button } from "#/components/ui/button";
+import { Button } from '#/components/ui/button'
+import type { RecipeFromStream } from '#/services/api/types'
+import { BookmarkCheck, BookmarkPlus, Loader2 } from 'lucide-react'
+import { useState } from 'react'
 
 interface Props extends RecipeFromStream {
   onSave?: () => Promise<void>
   initialSaved?: boolean
 }
 
-export function RecipeComponent({ onSave, initialSaved = false, ...recipe }: Props) {
+export function RecipeChatComponent({ onSave, initialSaved = false, ...recipe }: Props) {
   const [isSaving, setIsSaving] = useState(false)
   const [isSaved, setIsSaved] = useState(initialSaved)
 
@@ -44,7 +44,7 @@ export function RecipeComponent({ onSave, initialSaved = false, ...recipe }: Pro
         {onSave && (
           <Button
             size="sm"
-            variant={isSaved ? "secondary" : "outline"}
+            variant={isSaved ? 'secondary' : 'outline'}
             disabled={isSaving || isSaved}
             onClick={handleSave}
             className="shrink-0"

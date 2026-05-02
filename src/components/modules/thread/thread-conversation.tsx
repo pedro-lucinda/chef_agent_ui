@@ -7,7 +7,7 @@ import {
 import { Message, MessageContent } from '#/components/ai-elements/message'
 import type { MessageOut, RecipeFromStream } from '#/services/api/types'
 import { MessageSquare } from 'lucide-react'
-import { RecipeComponent } from '../recipes/recipe'
+import { RecipeChatComponent } from '../recipes/recipe-chat'
 import { AiStatus } from './ai-status'
 
 interface Props {
@@ -76,7 +76,7 @@ export function ThreadConversation({
                 {message.recipes && message.recipes.length > 0 && (
                   <div className="flex flex-col gap-3 w-full">
                     {message.recipes.map((recipe) => (
-                      <RecipeComponent
+                      <RecipeChatComponent
                         key={recipe.name}
                         {...recipe}
                         initialSaved={savedRecipeNames.has(recipe.name)}
@@ -92,9 +92,7 @@ export function ThreadConversation({
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
-      {streamError && (
-        <p className="text-center text-sm text-destructive pb-1">{streamError}</p>
-      )}
+      {streamError && <p className="text-center text-sm text-destructive pb-1">{streamError}</p>}
     </>
   )
 }

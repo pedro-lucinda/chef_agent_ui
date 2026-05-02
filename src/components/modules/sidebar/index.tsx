@@ -2,7 +2,7 @@ import { SIDEBAR_ITEMS } from '#/constants/sidebar'
 import { Logo } from '#/components/elements/logo'
 import { ThemeToggle } from '#/components/elements/theme-toggle'
 import { Button } from '#/components/ui/button'
-import { cn } from '#/lib/utils'
+import { cn } from '#/utils/cn'
 import {
   Sidebar,
   SidebarContent,

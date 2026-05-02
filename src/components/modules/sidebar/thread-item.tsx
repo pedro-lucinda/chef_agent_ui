@@ -1,6 +1,6 @@
 import { ConfirmActionDialog } from '#/components/modules/dialogs/confirm-action-dialog'
 import { Button } from '#/components/ui/button'
-import { cn } from '#/lib/utils'
+import { cn } from '#/utils/cn'
 import { Trash2Icon } from 'lucide-react'
 import { useState } from 'react'
 

@@ -1,4 +1,4 @@
-import { getThreadTitleFromMessages } from '#/lib/thread-display-messages'
+import { getThreadTitleFromMessages } from '#/utils/thread-display-messages'
 import { createRecipe, getThread, listRecipes } from '#/services/api'
 import type { RecipeCreate, RecipeFromStream } from '#/services/api/types'
 import { useAuth0 } from '@auth0/auth0-react'

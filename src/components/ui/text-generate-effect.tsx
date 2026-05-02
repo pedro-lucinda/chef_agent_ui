@@ -1,5 +1,5 @@
 'use client'
-import { cn } from '#/lib/utils'
+import { cn } from '#/utils/cn'
 import { motion, stagger, useAnimate } from 'motion/react'
 import { useEffect, useState } from 'react'
 
